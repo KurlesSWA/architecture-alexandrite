@@ -1,0 +1,81 @@
+@startuml
+
+!include <C4/C4_Container>
+!include <C4/C4_Context>
+
+HIDE_STEREOTYPE()
+LAYOUT_LANDSCAPE()
+
+skinparam linetype ortho
+
+title Jewelry Store System - Component Diagram (with ELK Stack)
+
+AddBoundaryTag("newSystem", $borderColor = transparent)
+AddContainerTag("redC", $borderColor="red", $borderThickness=6)
+AddContainerTag("greenC", $borderColor="green", $borderThickness=6)
+AddPersonTag("redP", $borderColor="red", $borderThickness=6)
+AddRelTag("redR", $lineColor="red")
+AddRelTag("greenR", $lineColor="green")
+
+Boundary(Users, , $tags="newSystem") {
+    Person(C, "Customer", "Description of external person")
+    Person(S, "Seller", "Operates with orders, confirms manufacturing for the user")
+    Person(API_U, "API user", "Description of external person", robot2)
+    Person(O, "Operator", "Takes orders in work, manufacturing jewelry")
+    Person(T, "Support", "Description of support", $tags=redP)
+}
+
+System_Boundary(JSS, "Jewelry Store System") {
+    Container(IS, "Internet Shop", "User can make an order, upload 3D model, work in 3D editor")
+    Container(API, "Shop API", "Provide list of shop items, save information about order from customer perspective, upload files")
+    ContainerDb(DB, "Shop DB", "Holds main information about work with customers and its orders")
+    ContainerQueue(MQ, "Messages Queue", "Send messages about new orders, changes of statuses between containers")
+    Container(FS, "3D files storage", "Stores 3D files so that can be calculated")
+
+    Container(CRM, "CRM", "Receives user generated or order information")
+    Container(CRM_API, "CRM API", "Description of container/role/responsibility")
+
+    Container(MES, "MES", "Assigns orders on operators, shows list of orders, calculates price of the order")
+    Container(MES_API, "MES API", "Interface to assign orders on operators, show list of orders")
+    ContainerDb(MES_DB, "MES db", "Holds information about orders, its assignment on operators and statuses from MES perspective")
+
+    Container(OTel, "Otel Collector", "collecting traces", $tags="redC")
+    Container(J, "Jaeger", "collecting traces", $tags="redC")
+    Container(JUI, "Jaeger UI", "collecting traces", $tags="redC")
+
+    Container(Logstash, "Logstash", "Collects, processes and forwards logs", $tags="greenC")
+    ContainerDb(Elasticsearch, "Elasticsearch", "Stores and indexes logs", $tags="greenC")
+    Container(Kibana, "Kibana", "Visualizes logs and metrics", $tags="greenC")
+}
+
+Rel(C, IS, )
+Rel(IS, API, )
+Rel(API, DB, )
+
+Rel(S, CRM, )
+Rel(CRM, CRM_API, )
+Rel(CRM_API, DB, )
+Rel(CRM_API, FS, )
+BiRel(CRM_API, MQ, )
+BiRel(MES_API, MQ, )
+Rel(MES_API, FS, )
+Rel(API, FS, "Upload files")
+Rel(API_U, MES_API, )
+Rel(O, MES, )
+Rel(MES_API, MES_DB, )
+Rel(MES, MES_API, )
+
+Rel(T, JUI,  , $tags="redR")
+Rel(JUI, J, , $tags="redR")
+Rel(OTel, J, , $tags="redR")
+Rel(API, OTel, , $tags="redR")
+Rel(MES_API, OTel, , $tags="redR")
+Rel(CRM_API, OTel, , $tags="redR")
+
+Rel(API, Logstash, , $tags="greenR")
+Rel(MES_API, Logstash, , $tags="greenR")
+Rel(CRM_API, Logstash, , $tags="greenR")
+Rel(Logstash, Elasticsearch, , $tags="greenR")
+Rel(Kibana, Elasticsearch, , $tags="greenR")
+Rel(T, Kibana, , $tags="greenR")
+@enduml

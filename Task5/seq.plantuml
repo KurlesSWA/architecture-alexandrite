@@ -1,0 +1,41 @@
+@startuml
+title Реализация кеширования в MES
+
+actor Оператор as O
+participant MES_UI
+participant MES_API
+participant "Кеш (Redis)" as Cache
+participant "MES_DB" as DB
+
+== Чтение списка заказов ==
+
+O -> MES_UI: Запрос заказов
+MES_UI -> MES_API: GET /orders
+
+alt Данные в кеше
+    MES_API -> Cache: Запрос списка заказов
+    Cache --> MES_API: Возврат кешированных данных
+else Данных нет в кеше
+    MES_API -> DB: запрос заказов с БД
+    DB --> MES_API: Результат запроса
+    MES_API -> Cache: Сохранить данные в кеш
+end
+
+MES_API --> MES_UI: Ответ с данными
+MES_UI --> O: Отображение списка
+
+== Обновление статуса заказа ==
+
+O -> MES_UI: Изменить статус заказа
+MES_UI -> MES_API: PATCH /orders/NN
+
+MES_API -> DB: Обновить статус
+DB --> MES_API: Подтверждение
+
+MES_API -> Cache: Инвалидация кеша
+Cache --> MES_API: Подтверждение
+
+MES_API --> MES_UI: 200 OK
+MES_UI --> O: Статус обновлен
+
+@enduml
